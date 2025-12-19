@@ -50,5 +50,13 @@
                     Margin="10" Click="RemoveClick"/>
         </StackPanel>
 
+        <StackPanel Grid.Row="1" Grid.Column="1" >
+            <TextBlock Text="Ошибки" Margin="5"/>
+            <Border x:Name="ErrorBorder">
+                <TextBlock x:Name="ErrorMessage" Foreground="Red" FontWeight="SemiBold"
+                           TextWrapping="Wrap" TextAlignment="Center"/>
+            </Border>
+        </StackPanel>
+
     </Grid>
 </Window>

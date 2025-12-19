@@ -43,13 +43,29 @@ namespace Client
 
 
         private async Task LoadPhones() 
-        { 
-            phones = await httpService.GetPhones(); 
-            Dispatcher.Invoke(() => 
-            { 
-                mainListBox.ItemsSource = null; 
-                mainListBox.ItemsSource = phones; 
-            }); 
+        {
+            try
+            {
+                phones = await httpService.GetPhones();
+                Dispatcher.Invoke(() =>
+                {
+                    mainListBox.ItemsSource = null;
+                    mainListBox.ItemsSource = phones;
+                });
+
+                Dispatcher.Invoke(() =>
+                {
+                    ModelInput.Clear();
+                    BrandInput.Clear();
+                    PriceInput.Clear();
+                });
+
+                HideErrorMessage();
+            }
+            catch(Exception ex) 
+            {
+                ShowErrorMessage($"Ошибка при загрузке данных: {ex.Message}");
+            }
         }
 
 
@@ -57,6 +73,21 @@ namespace Client
 
         public async void AddClick(object sender, RoutedEventArgs e)
         {
+            HideErrorMessage();
+
+            if (!ValidateInput(out string errorMessage))
+            {
+                //Dispatcher.Invoke(() =>
+                //{
+                //    ModelInput.Clear();
+                //    BrandInput.Clear();
+                //    PriceInput.Clear();
+                //});
+
+                ShowErrorMessage(errorMessage);
+
+                return;
+            }
 
             var phone = new Phone
             {
@@ -65,16 +96,48 @@ namespace Client
                 Price = Convert.ToDecimal(PriceInput.Text)
             };
 
+            if (phone == null)
+            {
+                mainListBox.ItemsSource = null;
+            }
+
+
             //mainListBox.ItemsSource = null;
             //mainListBox.ItemsSource = phones;
 
             await httpService.AddPhones(phone);
             await LoadPhones();
+
+            Dispatcher.Invoke(() =>
+            {
+                mainListBox.ItemsSource = null;
+                mainListBox.ItemsSource = phones;
+            });
+
+
+            Dispatcher.Invoke(() =>
+            {
+                ModelInput.Clear();
+                BrandInput.Clear();
+                PriceInput.Clear();
+            });
         }
 
 
         public async void RemoveClick(object sender, RoutedEventArgs e)
         {
+            HideErrorMessage();
+            //if (!ValidateInput())
+            //{
+            //    Dispatcher.Invoke(() =>
+            //    {
+            //        ModelInput.Clear();
+            //        BrandInput.Clear();
+            //        PriceInput.Clear();
+            //    });
+            //}
+
+
             //Dispatcher.Invoke(() =>
             //{
             //    phones.Remove(mainListBox.SelectedItem as Phone);
@@ -88,6 +151,87 @@ namespace Client
                 await httpService.DeletePhones(selected.Id);
                 await LoadPhones();
             }
+
+            Dispatcher.Invoke(() =>
+            {
+                mainListBox.ItemsSource = null;
+                mainListBox.ItemsSource = phones;
+            });
+
+
+            Dispatcher.Invoke(() =>
+            {
+                ModelInput.Clear();
+                BrandInput.Clear();
+                PriceInput.Clear();
+            });
+        }
+
+
+        private bool ValidateInput(out string errorMessage)
+        {
+            if (string.IsNullOrWhiteSpace(BrandInput.Text))
+            {
+                errorMessage = "Поле 'Производитель' не может быть пустым";
+                BrandInput.Focus();
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(ModelInput.Text))
+            {
+                errorMessage = "Поле 'Модель' не может быть пустым";
+                ModelInput.Focus();
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(PriceInput.Text))
+            {
+                errorMessage = "Поле 'Цена' не может быть пустым";
+                PriceInput.Focus();
+                return false;
+            }
+
+            if (!decimal.TryParse(PriceInput.Text, out decimal price))
+            {
+                errorMessage = "Введите корректное числовое значение для цены";
+                PriceInput.Focus();
+                PriceInput.SelectAll();
+                return false;
+            }
+
+            if (price <= 0)
+            {
+                errorMessage = "Цена должна быть больше нуля";
+                PriceInput.Focus();
+                PriceInput.SelectAll();
+                return false;
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
+
+
+
+        private void ShowErrorMessage(string message)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                ErrorMessage.Text = message;
+                ErrorBorder.Visibility = Visibility.Visible;
+            });
+        }
+
+
+        private void HideErrorMessage()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                ErrorMessage.Text = string.Empty;
+                ErrorBorder.Visibility = Visibility.Collapsed;
+                //errorTimer.Stop();
+            });
         }
     }
 }
